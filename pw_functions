@@ -1,0 +1,500 @@
+# -*- mode: sh; -*-
+# $Id: pw_functions 742 2012-03-22 13:55:54Z pw $
+# $Revision: 742 $ $Date: 2012-03-22 09:55:54 -0400 (Thu, 22 Mar 2012) $
+# $Author: pw $
+
+# Adds some handy functions for working with directories, and other stuff
+# that can't be run in a subshell.
+# Meant to be sourced by your shell.
+
+function mkcpcd {
+	# Copy all args. Last arg must be destination dir.
+	# Will be created if necessary.
+	if [ $# -lt 1 ]
+	then
+		echo Usage: cpcd [files...] directory
+		return 1
+	fi
+	# First get the directory name. POSIX-standard way to get the last arg.
+	eval local _dirname=\${$#}
+	mkdir -p "$_dirname"
+	cpcd $@
+}
+
+function die {
+	echo Exiting: $1
+	exit 1
+}
+
+# Better than die: the "3-finger claw" by William Baxter, courtesy Isaac Levy,
+# see http://lists.nycbug.org/pipermail/talk/2011-December/013790.html
+# Now instead of "foo || die blah", just do "safe foo".
+# Example:
+# $ safe asdpofuasdf
+# asdpofuasdf: command not found
+# bash: cannot asdpofuasdf
+# exit
+# Unfortunately barf and safe cannot be used in functions for interactive use :(
+
+shout() { echo "$0: $*" >&2; }  # Just echo an error and the program name
+barf() { shout "$*"; exit 111; }
+safe() { "$@" || barf "cannot $*"; }
+noisy() {
+    # Like 'safe' but doesn't exit, just sets return code
+   ("$@" && return 0) || (shout "cannot $*"; return 1)
+}
+
+quiet_safe() { "$@" > /dev/null 2>&1 || barf "cannot $*"; }
+
+
+function cpcd {
+	# Copy all args. Last arg must be destination dir.
+	if [ $# -lt 1 ]
+	then
+		echo Usage: cpcd [files...] directory
+		return 1
+	fi
+
+	eval local _dirname=\${$#}          # gets up to 999 args, per POSIX
+
+	if [ ! -e "$_dirname" ]; then
+		echo Destination "$_dirname" does not exist, aborting.
+		return 1
+	fi
+	if [ ! -d "$_dirname" ]; then
+		echo Destination "$_dirname" is not a directory, aborting.
+		return 1
+	fi
+
+    # Tried moving all at once but this breaks on filenames w/ spaces:
+	# cp $@ || (echo copying files failed; return 1)
+    # This works:
+	while [ $# -gt 1 ]; do
+		cp "$1" "$_dirname" || (echo Could not copy "$1" to "$_dirname"; return 1)
+		shift
+	done
+	cd "$_dirname"
+}
+
+function mkcd {
+	if [ ! $# -eq 1 ]
+	then
+		echo Usage: mkcd _dirname
+		echo Creates the directory and moves there.
+		return 1
+	fi
+	mkdir -p "$1" && cd "$1"
+}
+
+function mkmvcd {
+	if [ $# -lt 1 ]
+	then
+		echo Usage: mkmvcd [files...] _dirname
+		echo Will create _dirname, move all file args there, and cd to it.
+		return 1
+	fi
+	# First get the directory name. POSIX-standard way to get the last arg.
+	eval local _dirname=\${$#}
+
+	if [ -d "$_dirname" ]
+	then
+		echo Directory "$_dirname" already exists, aborting.
+		return 1
+	fi
+	if [ -a "$_dirname" ]
+	then
+		echo File "$1" already exists, aborting.
+		return 1
+	fi
+
+	# First make somewhere to put everything.
+	mkdir -p "$_dirname" || (echo Could not create "$_dirname"; return 1)
+
+	# Move all but last arg. into the temp dir.
+	while [ $# -gt 1 ]; do
+		mv "$1" "$_dirname" || (echo Could not move "$1" to "$_dirname"; return 1)
+		shift
+	done
+	cd "$_dirname"
+
+}
+function mvcd {
+	# Move all args. Last arg must be destination dir.
+	if [ $# -lt 1 ]
+	then
+		echo Usage: mvcd [files...] directory
+		return 1
+	fi
+
+	eval local _dirname=\${$#}
+	if [ ! -e "$_dirname" ]; then
+		echo "$_dirname" does not exist, aborting.
+		return 1
+	fi
+
+	if [ ! -d "$_dirname" ]; then
+		echo "$_dirname" is not a directory, aborting.
+		return 1
+	fi
+
+    # Tried moving all at once but this breaks on filenames w/ spaces:
+	#mv $@ || (echo moving files failed; return 1)
+    # This works:
+	while [ $# -gt 1 ]; do
+		mv "$1" "$_dirname" || (echo Could not move "$1" to "$_dirname"; return 1)
+		shift
+	done
+	cd "$_dirname"
+}
+
+function safe_link {
+	if [ $# -lt 2 ]
+	then
+		echo Usage: safe_link source target
+		echo "   source file must exist."
+		echo "   target must either be a link or not exist."
+		echo "   source and target must not be the same."
+		return 1
+	fi
+
+        TARGET="$2"
+       	SOURCE="$1" 
+	if [  -e "$SOURCE" ]
+	then
+		if [ -L "$TARGET" ]
+		then
+			# target exists & is a link.
+			if [ "$TARGET" = "$SOURCE" ]
+			then
+				echo "Denied: Target and source can't be same."
+				return 1
+			fi
+		elif [ -e "$TARGET" ]
+		then
+			echo "Denied: Target $TARGET exists and is not a link."
+			return 1
+		fi
+	else
+		# no source.
+		echo "Denied: $SOURCE does not exist."
+		return 1
+	fi
+
+	#echo "OK"
+	rm -f "$TARGET"
+	ln -sf "$SOURCE" "$TARGET"
+	return 0
+}
+
+function ssh-agent-add {
+    # Ubuntu used to automagically agent-ize everything,
+    # but they broke that in 11.something.
+    # So. Run this as needed; less work than doing `ssh-agent ; ssh-add` in
+    # each terminal.
+    local _SOCKNAME
+    local GOT_AGENT
+    if [[ -z "$SSH_AGENT_PID" ]]; then
+	# We don't have an ssh agent environment.  Look for a running
+	# agent belonging to this user, and use it. (To avoid
+	# craziness when there are multiple agents running, this
+	# assumes that the agent's socket name includes a PID, which
+	# is one less than the PID of the agent;
+	# that's true by default on at least ubuntu 11.04,
+	# but presumably totally unreliable, so if it fails,
+        # we just fall back to starting a new agent.
+        SSH_AGENT_PID=`pgrep -u $USER ssh-agent | head -n1`
+	if [ -n "$SSH_AGENT_PID" ]; then
+            SSH_AGENT_COUNT=`pgrep -u $USER ssh-agent | wc -l`
+            if [ "$SSH_AGENT_COUNT" -gt 0 ] ; then
+		let _SOCKNAME=$SSH_AGENT_PID-1
+		SSH_AUTH_SOCK=`find /tmp -user $USER -type s -name "*agent*" 2>/dev/null | grep "$_SOCKNAME" | head -n1`
+		if [ -n "$SSH_AUTH_SOCK" ]; then
+		    export SSH_AGENT_PID
+		    export SSH_AUTH_SOCK
+		    GOT_AGENT=1
+                    echo "Found ssh agent, PID $SSH_AGENT_PID"
+		else
+		    echo "ssh agents exist, but I can't find a socket with $SSH_AGENT_PID in its name"
+		fi
+	    fi
+	fi
+	if [ -z "$GOT_AGENT" ]; then
+	    echo "No running ssh agent found, starting one."
+            eval `/usr/bin/ssh-agent -s`
+	fi
+    fi
+
+    # Check if we need to add keys.
+    ssh-add -l >/dev/null
+    if [ $? != 0 ]; then
+        echo Adding keys via ssh-add...
+        if [ -z "$SSH_ASKPASS" ] && [ -f /usr/bin/ssh-askpass ]; then
+		SSH_ASKPASS=/usr/bin/ssh-askpass
+	fi
+        if [[ -n "$DISPLAY" ]] && [[ -n "$SSH_ASKPASS" ]]; then
+            # Force using the $SSH_ASKPASS program, which pops up a GUI.
+            # ... actually, maybe I don't care. hm.
+            ssh-add < /dev/null
+        else
+            # We're probably in a terminal.
+            ssh-add
+        fi
+    fi
+
+}
+
+function activator {
+    # Find a virtualenv in a parent directory and activate it.
+    local ACTIVATOR_STARTDIR=$PWD
+    unset ACTIVATOR_SCRIPT
+    local OLD_OLDPWD=$OLDPWD
+    local ACTIVATOR_SCRIPT
+    # first deactivate, if necessary.  (If you have a workingenv
+    # activated and you then activate a virtualenv, your prompt shows
+    # both, so we avoid that.)
+    declare -F | grep -q "^declare -f deactivate$"
+    if [ $? -eq 0 ]; then
+    	deactivate
+    fi
+    # Find an activate script.
+    while [ true ]; do
+	if [ $PWD == '/' ]; then
+	    break
+	elif [ -f ./bin/activate ]; then
+	    ACTIVATOR_SCRIPT=$PWD/bin/activate
+	    break
+	elif [ -f activate ]; then
+	    ACTIVATOR_SCRIPT=$PWD/activate
+	    break
+	elif [ -f ./.env/bin/activate ]; then
+	    ACTIVATOR_SCRIPT=$PWD/.env/bin/activate
+	    break
+	elif [ -f ./.venv/bin/activate ]; then
+	    ACTIVATOR_SCRIPT=$PWD/.venv/bin/activate
+	    break
+	elif [ -f ./.pyvenv/bin/activate ]; then
+	    ACTIVATOR_SCRIPT=$PWD/.pyvenv/bin/activate
+	    break
+	else
+	    cd ..
+	fi
+    done
+    if [ -f "$ACTIVATOR_SCRIPT" ]; then
+	echo Activating $ACTIVATOR_SCRIPT...
+	source $ACTIVATOR_SCRIPT
+	if [ -d "$WORKING_ENV" ]; then
+		echo WORKING_ENV is now $WORKING_ENV
+	elif [ -d "$VIRTUAL_ENV" ]; then
+		echo VIRTUAL_ENV is now $VIRTUAL_ENV
+	fi
+	cd $ACTIVATOR_STARTDIR
+	export OLDPWD=$OLD_OLDPWD
+    # TODO: get right python version!
+	export SP=`find $VIRTUAL_ENV/lib -name site-packages | head -n1`
+	return 0
+    else
+	echo No activate script found.
+	cd $ACTIVATOR_STARTDIR
+	export OLDPWD=$OLD_OLDPWD
+	return 1
+    fi
+}
+
+
+function scriptpath {
+    # Prints the directory containing the calling script.
+    # This should work, as long as the script is called by name,
+    # regardless of spaces etc. in the path.
+    #
+    # Caveats:
+    # 1)  Falls back to $PWD when the script is called not by name
+    # (eg. if you do ssh user@remotehost bash < localscript
+    # it will print something like /home/user/)
+    #
+    # 2) When invoked via symlink to the script, it prints the
+    # symlink's parent dir; this is a feature.
+    #
+    # 3) Does not care if the parent directory is itself a symlink,
+    # i.e. prints the link rather than its target; this is a feature.
+    #
+    # Based roughly on stuff from http://stackoverflow.com/questions/59895/can-a-bash-script-tell-what-directory-its-in
+    # See http://mywiki.wooledge.org/BashFAQ/028 for more about the caveats.
+    # See "Parameter Expansion" in bash(1) for explanation of what %/* does.
+    (cd "${0%/*}" 2>/dev/null; echo "$PWD"/)
+
+}
+
+
+function generate_text_image {
+    # Depends on `convert` from ImageMagick.
+    # TODO: 
+    TEXT="$1"
+    IMG_PATH="$2"
+    FONT=/Library//Fonts/Microsoft\ Sans\ Serif.ttf
+    convert -background black -fill white -font "$FONT" -size 400x200 \
+        -rotate 20 "label:${TEXT}" "$IMG_PATH"
+}
+
+function iterm_background_from_text {
+    # WIP attempting to convert sshwrap to work on macos & iterm
+    TEXT="$1"
+    IMG_PATH="$2"
+    if [ ! -f "$IMG_PATH" ]; then
+        generate_text_image "$TEXT" "$IMG_PATH"
+    fi
+}
+
+function sshwrap {
+    # The most beautiful horrible hack I ever made
+    # A wrapper for ssh that sets roxterm's background image based on the
+    # hostname.
+
+    # We do most of this in bash because it handles wrapping interactive
+    # commands and TTYs well, which Python does not (at least not without
+    # jumping through major hoops a la Pexpect).
+    # The bits that I could not bear to do in bash are farmed out to Python.
+
+    # Leaves behind large numbers of nearly-identical Roxterm
+    # profiles; since I never select profile by hand, I don't care.
+
+    # Does not work everywhere ssh does, notably `RSYNC_RSH=sshwrap`
+    # does not work.
+
+    DEFAULT_PROFILE=Default01  # This needs to exist already in the profile dir
+
+    # If this is missing: apt-get install ttf-liberation
+    FONT=/usr/share/fonts/truetype/ttf-liberation/LiberationSans-Bold.ttf
+
+    ssh-agent-add
+
+    function generate_image {
+        IMG_DIR=~/.hostbackgrounds
+        mkdir -p ${IMG_DIR}
+        IMG_PATH=${IMG_DIR}/${1}.png
+        export IMG_PATH
+        if [ -f "${IMG_PATH}" ]; then
+            # Already got an image for this hostname
+            return 0
+        fi
+        # Try Googling for a useful image. Python helps.
+        TEMP_IMAGE=`google_image_search.py "${1}"`
+        if [[ -z "$TEMP_IMAGE" ]]; then
+            echo "Image not found for $1, generating one"
+            # Didn't download anything, so just put the hostname in a png.
+            generate_text_image "$TARGET_HOST" "$IMG_PATH"
+        else
+            echo "Converting $TEMP_IMAGE and adding label"
+            convert ${TEMP_IMAGE} -resize 500x500 \
+              -fill white -stroke black -strokewidth 0.2 -font "$FONT" \
+              -draw "scale 8,8 gravity center rotate 18 text 0,0 ${TARGET_HOST}"  "${IMG_PATH}"
+            #convert ${TEMP_IMAGE} -size 500x500 -sigmoidal-contrast 10x50 -modulate         50  -fill white -font "$FONT" -draw 'rotate -20 text 100,100 "${TARGET_HOST}"' "${IMG_PATH}"
+            rm -f ${TEMP_IMAGE}
+        fi
+    }
+
+    if [ "$ROXTERM_ID" != "" ]; then
+        # Parse the hostname out of ssh args.
+        # This would be horrible to do in bash. So, we go python for this bit.
+        # TODO this assumes hostname is first!!
+        TARGET_HOST=`parse_hostname.py $@`
+        echo Target is "$TARGET_HOST"
+        if [[ -n "${TARGET_HOST}" ]]; then
+            echo -n Setting up roxterm for ${TARGET_HOST}...
+            generate_image \"${TARGET_HOST}\"
+            ROXDIR=$HOME/.config/roxterm.sourceforge.net/Profiles
+            # Create a profile for this hostname.
+            rm -f $ROXDIR/${TARGET_HOST} 
+            cp  $ROXDIR/$DEFAULT_PROFILE $ROXDIR/${TARGET_HOST}
+
+            # Use the new profile, and tell it to use our image.
+            ROXPATH=/net/sf/roxterm/Options
+            ROXOPTS=net.sf.roxterm.Options
+            dbus-send --session $ROXPATH $ROXOPTS.SetProfile string:${ROXTERM_ID} string:${TARGET_HOST}
+            dbus-send --session $ROXPATH $ROXOPTS.StringOption string:Profiles/${TARGET_HOST} string:background_type 'string:1'
+            dbus-send --session $ROXPATH $ROXOPTS.StringOption string:Profiles/${TARGET_HOST} string:background_img "string:${IMG_PATH}"
+            # Adjust saturation to make it low-brightness.
+            dbus-send --session $ROXPATH $ROXOPTS.StringOption "string:Profiles/${TARGET_HOST}" "string:saturation" "string:0.19"
+            echo Done.
+        fi
+    fi
+
+    ssh $@
+
+    #Cleanup.
+    if [ "${TARGET_HOST}" != "" ]; then
+        dbus-send --session $ROXPATH $ROXOPTS.SetProfile "string:$ROXTERM_ID" string:${DEFAULT_PROFILE}
+    fi
+}
+
+
+
+# Line-oriented sets in bash!
+function set_union {
+   cat $1 $2 | sort | uniq
+}
+
+function set_difference {
+   cat $1 $2 $2 | sort | uniq -u
+}
+
+
+function set_intersect {
+   # Would be nice if could do w/o a loop...
+   for N in `cat $1`; do
+     grep -- "$N" "$2"
+   done
+}
+
+
+
+function iterm2_fix_paste {
+   # From https://stackoverflow.com/a/51764542
+   printf '\e[?2004l'
+}
+
+
+function killj {
+   pid=`jobs -p | head -n 1`
+   if [ -z "$pid" ] ; then
+      shout "No background job running"
+      return 1
+   fi
+   kill "$pid"
+   echo Killed $pid, foregrounding
+   fg
+}
+
+
+####################################################################################
+# Shopify
+####################################################################################
+
+function mysql-core {
+    mysql -h Shopify.railgun -u root_shard_0 -D shopify_dev_shard_0
+}    
+
+
+function dev-upper {
+   COUNT=$1
+   if [ -z "$COUNT" ]; then
+      COUNT=5
+   fi
+
+   for i in `seq $COUNT`; do
+      echo "Attempt $i of $COUNT..."
+      dev up && break
+   done
+}
+
+
+##############################################################################
+# Git
+##############################################################################
+
+function gg {
+    git grep --color=always "$@"
+}
+
+function ggnt {
+    gg "$@" | grep -v test/
+}
