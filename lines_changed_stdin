@@ -1,0 +1,9 @@
+#!/bin/bash
+
+TF=`mktemp -t lineschanged.XXXXXXXX`
+cat > $TF
+ADDED=`grep "^[+>]" $TF | wc -l`
+REMOVED=`grep "^[-<]" $TF | wc -l`
+echo "$ADDED lines to add"
+echo "$REMOVED lines to remove"
+rm -rf $TF

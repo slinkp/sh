@@ -1,0 +1,43 @@
+#!/bin/bash
+
+# Based on args (if any), guess which VCS to use and report count of
+# lines that would be added and removed.
+
+GOT_VCS=""
+
+TF=`mktemp -t lineschanged.XXXXXXXX`
+if [ -d CVS ]; then
+    GOT_VCS=CVS
+    echo cvs?
+    cvs diff $@ > $TF 2>/dev/null
+elif [ -d .svn ]; then
+    GOT_VCS=SVN
+    svn diff $@ > $TF 2>/dev/null
+else
+    STARTDIR=$PWD
+    while [ $PWD != "/" ]; do
+	if [ -d .hg ]; then
+	    GOT_VCS=HG
+	    cd $STARTDIR
+	    hg diff $@ > $TF 2>/dev/null
+	    break
+	elif [ -d .git ]; then
+	    GOT_VCS=GIT
+	    cd $STARTDIR
+	    git diff $@ > $TF 2>/dev/null
+	    break
+	else
+	    cd ..
+	fi
+    done
+fi
+
+if [ "$GOT_VCS" == "" ]; then
+    echo "We don't appear to be in a CVS or SVN or HG or Git checkout."
+    exit 1
+fi
+ADDED=`grep "^[+>]" $TF | wc -l`
+REMOVED=`grep "^[-<]" $TF | wc -l`
+echo "$ADDED lines to add"
+echo "$REMOVED lines to remove"
+rm -rf $TF
