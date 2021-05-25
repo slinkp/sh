@@ -1,0 +1,54 @@
+#!/bin/bash
+
+if [ $# -lt 2 ]; then
+    echo "Usage: `basename $0` from-file to-file (options)"
+    echo Either or both files may be on remote systems, like host:path-to-file
+    exit 1
+fi
+
+FROM=$1
+shift
+TO=$1
+shift
+
+# The rest of the args are options.  XXX would be nice to put those first!
+ARGS=$@
+export TO_DELETE=""
+
+# Look for a colorizing diff.
+DIFF=diff
+COLORIZER=""
+which colordiff > /dev/null 2>&1
+if [ $? -eq 0 ]; then
+    DIFF=colordiff
+else
+    which pygmentize > /dev/null 2>&1
+    if [ $? -eq 0 ]; then
+        DIFF=diff
+        COLORIZER="| pygmentize -l diff"
+    fi
+fi
+
+function getfile {
+    echo "$1" | grep ":" > /dev/null
+    if [ $? -eq 0 ]; then
+	# it's remote
+	TMPFILE=`mktemp /tmp/sshdiff.XXXXXX` || exit 1
+	rsync -aq $1 $TMPFILE || exit 1
+	# need to get the filename for later removal.
+	export TO_DELETE="$TMPFILE $TO_DELETE"
+	echo $TMPFILE
+    else
+	# it's local, use the original file.
+	echo $1
+    fi
+}
+
+f1=`getfile $FROM`
+f2=`getfile $TO`
+
+$DIFF $ARGS $f1 $f2  $COLORIZER
+
+for f in $TO_DELETE; do
+    rm -f $f;
+done
