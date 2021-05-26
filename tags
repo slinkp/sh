@@ -1,6 +1,12 @@
 #!/bin/bash
 
-safe cd ~/src/github.com/Shopify/shopify
+if [ $SPIN ]; then
+    REPO=~/src/github.com/shopify/shopify
+else
+    REPO=~/src/github.com/Shopify/shopify
+fi
+
+safe cd $REPO
 
 # Hack to install if broken yet again...
 (ripper-tags --help || gem install ripper-tags) > /dev/null 2>&1
