@@ -1,0 +1,10 @@
+#!/bin/bash
+
+safe cd ~/src/github.com/Shopify/shopify
+
+# Hack to install if broken yet again...
+(ripper-tags --help || gem install ripper-tags) > /dev/null 2>&1
+
+CMD="ripper-tags -f TAGS -R -e components/ gems/ lib/ eagerlib/"
+echo "Running in background: $CMD"
+$CMD &
