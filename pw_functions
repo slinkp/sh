@@ -486,6 +486,37 @@ function dev-upper {
    done
 }
 
+function spin-shopify-domain {
+    DOMAIN=`spin show | grep "Shopify/shopify.*available" | cut -d " " -f 1`
+    if [ -z "$DOMAIN" ]; then
+        return 1
+    fi
+    echo $DOMAIN
+}
+
+function spin-graphiql {
+    DOMAIN=`spin-shopify-domain`
+    if [ -z "$DOMAIN" ]; then
+        shout "Shopify does not seem to be running"
+        return 1
+    fi
+    URL="https://app.${DOMAIN}/services/internal/shops/1/graphql?appID=1830279&versionHandle=unstable"
+    echo "Opening $URL"
+    open "$URL"
+}
+
+function spin-services-internal {
+    DOMAIN=`spin-shopify-domain`
+    if [ -z "$DOMAIN" ]; then
+        shout "Shopify does not seem to be running"
+        return 1
+    fi
+    URL="https://app.${DOMAIN}/services/internal/shops/1"
+    echo "Opening $URL"
+    open "$URL"
+}
+
+
 
 ##############################################################################
 # Git
