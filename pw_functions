@@ -529,3 +529,8 @@ function gg {
 function ggnt {
     gg "$@" | grep -v test/
 }
+
+function groot() {
+    # cd to git root from anywhere in the tree
+    cd $(git rev-parse --show-toplevel)
+}
