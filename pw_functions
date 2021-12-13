@@ -464,6 +464,11 @@ function killj {
    fg
 }
 
+function pdfcat {
+    # Usage example:
+    # pdfcat foo.pdf bar.pdf bat.pdf > combined.pdf
+    gs -q -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -sOutputFile=- $@
+}
 
 ####################################################################################
 # Shopify
