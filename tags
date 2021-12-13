@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ $SPIN ]; then
-    REPO=~/src/github.com/shopify/shopify
+    REPO=$SPIN_REPO_SOURCE_PATH
 else
     REPO=~/src/github.com/Shopify/shopify
 fi
