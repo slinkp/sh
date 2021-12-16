@@ -1,0 +1,22 @@
+#!/bin/bash
+#
+# git cob aka check-out-branch
+# Lists recent local branches and allows interactively selecting one to check
+# out in a nice menu.
+# Depends on `fzf` (brew install fzf or apt-get install fzf or whatever)
+#
+# From alex.selesse@shopify.com thanks!!
+# https://github.com/selesse/dotfiles/blob/master/bin/git-cob
+
+branch=$(git for-each-ref --color --sort=-committerdate \
+    refs/heads/ \
+    --format='%(HEAD) %(color:yellow)%(refname:short)%(color:reset) | (%(color:green)%(committerdate:relative)%(color:reset)) %(color:bold)%(authorname)%(color:reset) - %(contents:subject)' | \
+        fzf --ansi | \
+        cut -f2 -d'*' | \
+        cut -f1 -d'|' | \
+        xargs)
+
+if [ ! -z "$branch" ] ; then
+    git checkout "$branch"
+fi
+
