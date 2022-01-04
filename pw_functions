@@ -522,6 +522,17 @@ function spin-services-internal {
 }
 
 
+function spin-mail {
+    DOMAIN=`spin-shopify-domain`
+    if [ -z "$DOMAIN" ]; then
+        shout "Shopify does not seem to be running"
+        return 1
+    fi
+    URL="https://app.${DOMAIN}/services/internal/mail"
+    echo "Opening $URL"
+    open "$URL"
+}
+
 
 ##############################################################################
 # Git
