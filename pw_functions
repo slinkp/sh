@@ -492,7 +492,7 @@ function dev-upper {
 }
 
 function spin-shopify-domain {
-    DOMAIN=`spin show | grep "Shopify/shopify.*available" | cut -d " " -f 1`
+    DOMAIN=`spin show -o fqdn`
     if [ -z "$DOMAIN" ]; then
         return 1
     fi
@@ -505,7 +505,7 @@ function spin-graphiql {
         shout "Shopify does not seem to be running"
         return 1
     fi
-    URL="https://app.${DOMAIN}/services/internal/shops/1/graphql?appID=1830279&versionHandle=unstable"
+    URL="https://app.shopify.${DOMAIN}/services/internal/shops/1/graphql?appID=1830279&versionHandle=unstable"
     echo "Opening $URL"
     open "$URL"
 }
@@ -516,7 +516,7 @@ function spin-services-internal {
         shout "Shopify does not seem to be running"
         return 1
     fi
-    URL="https://app.${DOMAIN}/services/internal/shops/1"
+    URL="https://app.shopify.${DOMAIN}/services/internal/shops/1"
     echo "Opening $URL"
     open "$URL"
 }
@@ -528,7 +528,7 @@ function spin-mail {
         shout "Shopify does not seem to be running"
         return 1
     fi
-    URL="https://app.${DOMAIN}/services/internal/mail"
+    URL="https://app.shopify.${DOMAIN}/services/internal/mail"
     echo "Opening $URL"
     open "$URL"
 }
