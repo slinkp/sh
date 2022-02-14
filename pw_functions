@@ -533,6 +533,20 @@ function spin-mail {
     open "$URL"
 }
 
+function mysql-spin {
+    if [ -z "$SPIN" ]; then
+        shout "Not currently in spin"
+        return 1
+    fi
+    SOCKET=/var/run/mysqld-shopify--shopify/mysqld.sock
+    if [ -n "$MYSQL_PORT" ]; then
+        echo Connecting through $MYSQL_HOST $MYSQL_PORT
+        mysql -u root -D shopify_dev_shard_0 -P $MYSQL_PORT -h "$MYSQL_HOST" $@
+    elif [ -S $SOCKET ]; then
+        echo Connecting through $SOCKET
+        mysql -u root -D shopify_dev_shard_0 -S $SOCKET $@
+    fi
+}
 
 ##############################################################################
 # Git
