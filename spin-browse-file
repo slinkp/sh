@@ -1,0 +1,26 @@
+#!/usr/bin/zsh
+
+SOURCE="$1"
+
+if [ -z "$SOURCE" ]; then
+   echo Specify a file
+   exit 1
+fi
+
+
+SHOP_DIR="/home/spin/src/github.com/Shopify/shopify"
+
+DEST="$SHOP_DIR/public"
+
+if [ ! -d "$DEST" ]; then
+    echo No such dir $DEST
+    exit 1
+fi
+
+echo "!! Copying $SOURCE to $DEST DO NOT COMMIT"
+cp -f $SOURCE $DEST/ || exit 1
+cd $SHOP_DIR || exit 1
+URL="https://shop1.${SPIN_INSTANCE_FQDN}/`basename $SOURCE`"
+echo "Opening URL $URL"
+open "$URL"
+
