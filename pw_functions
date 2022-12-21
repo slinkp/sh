@@ -492,15 +492,18 @@ function dev-upper {
 }
 
 function spin-shopify-domain {
-    DOMAIN=`spin show -o fqdn`
-    if [ -z "$DOMAIN" ]; then
-        return 1
+    if [ -n "$SPIN" ]; then
+        # Running inside spin
+        local DOMAIN=`cat /etc/spin/machine/fqdn 2>/dev/null`
+    else
+        # Supports passing instance name
+        local DOMAIN=`spin show -o fqdn $@`
     fi
     echo $DOMAIN
 }
 
 function spin-graphiql {
-    DOMAIN=`spin-shopify-domain`
+    DOMAIN=`spin-shopify-domain $@`
     if [ -z "$DOMAIN" ]; then
         shout "Shopify does not seem to be running"
         return 1
@@ -511,7 +514,7 @@ function spin-graphiql {
 }
 
 function spin-services-internal {
-    DOMAIN=`spin-shopify-domain`
+    DOMAIN=`spin-shopify-domain $@`
     if [ -z "$DOMAIN" ]; then
         shout "Shopify does not seem to be running"
         return 1
@@ -523,7 +526,7 @@ function spin-services-internal {
 
 
 function spin-mail {
-    DOMAIN=`spin-shopify-domain`
+    DOMAIN=`spin-shopify-domain $@`
     if [ -z "$DOMAIN" ]; then
         shout "Shopify does not seem to be running"
         return 1
