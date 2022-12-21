@@ -1,4 +1,7 @@
 #!/bin/bash
+# -*- mode: shell-script-mode; -*-
+
+source ~/sh/pw_functions 2>/dev/null
 
 if [ $SPIN ]; then
     REPO=$SPIN_REPO_SOURCE_PATH
