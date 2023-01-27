@@ -565,6 +565,17 @@ function ccd {
     cd "$1"
 }
 
+function remain {
+    # Rebase against current main, update code, and re-test
+    git up && git rebase origin/main || return
+    if [ -n "$SPIN" ]; then
+        update || return
+    else
+        dev up || return
+    fi
+    dev test --include-branch-commits
+}
+
 ##############################################################################
 # Git
 ##############################################################################
