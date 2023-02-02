@@ -41,7 +41,9 @@ barf() { shout "$*"; exit 111; }
 safe() { "$@" || barf "cannot $*"; }
 noisy() {
     # Like 'safe' but doesn't exit, just sets return code
-   ("$@" && return 0) || (shout "cannot $*"; return 1)
+    # Unfortunately "noisy foo" inside a function does not make that function return,
+    # so callers will still need to do something like "noisy foo || return 1"
+    ("$@" && return 0) || (shout "cannot $*"; return 1)
 }
 
 quiet_safe() { "$@" > /dev/null 2>&1 || barf "cannot $*"; }
