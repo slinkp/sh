@@ -567,11 +567,12 @@ function ccd {
 
 function remain {
     # Rebase against current main, update code, and re-test
-    git up && git rebase origin/main || return
+    noisy git up || return 1
+    noisy git rebase origin/main || return 1
     if [ -n "$SPIN" ]; then
-        update || return
+        noisy update || return 1
     else
-        dev up || return
+        noisy dev up || return 1
     fi
     dev test --include-branch-commits
 }
