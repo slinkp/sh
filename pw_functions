@@ -569,7 +569,7 @@ function ccd {
 
 function remain {
     # Rebase against current main, update code, and re-test
-    noisy git up || return 1
+    noisy git fetch origin main || return 1
     noisy git rebase origin/main || return 1
     if [ -n "$SPIN" ]; then
         noisy update || return 1
