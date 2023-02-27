@@ -566,6 +566,7 @@ function remain {
     if [ "$1" == "-a" ]; then
         noisy dev style --include-branch-commits || return 1
         noisy dev typecheck || return 1
+        noisy dev packages check || return 1
     fi
 }
 
