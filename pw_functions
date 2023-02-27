@@ -553,20 +553,6 @@ function mysql-spin {
     fi
 }
 
-function ccd {
-    if [ -z "$1" ]; then
-        shout "Which shopify component you want?"
-        return 1
-    fi
-    ROOT=~/src/github.com/Shopify/shopify
-    cd $ROOT/components
-    if [ ! -d "$1" ]; then
-        shout "No such component $1"
-        return 1
-    fi
-    cd "$1"
-}
-
 function remain {
     # Rebase against current main, update code, and re-test
     noisy git fetch origin main || return 1
