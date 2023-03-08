@@ -28,25 +28,35 @@ function die {
 
 # Better than die: the "3-finger claw" by William Baxter, courtesy Isaac Levy,
 # see http://lists.nycbug.org/pipermail/talk/2011-December/013790.html
-# Now instead of "foo || die blah", just do "safe foo".
+# Now instead of "foo || die blah", just do "safe foo"
+# and your shell script will exit early with a nice message.
+#
 # Example:
 # $ safe asdpofuasdf
 # asdpofuasdf: command not found
 # bash: cannot asdpofuasdf
 # exit
-# Unfortunately barf and safe cannot be used in functions for interactive use :(
 
-shout() { echo "$0: $*" >&2; }  # Just echo an error and the program name
+shout() { echo "$0: $*" >&2; }  # Just echo an error and the program name to stderr
 barf() { shout "$*"; exit 111; }
-safe() { "$@" || barf "cannot $*"; }
+safe() { "$@" || barf "Failed with status $?: $*"; }
+
+# Unfortunately barf and safe cannot be used in functions intended for interactive use,
+# or they'll exit your terminal :(
+# So, 'noisy' is like 'safe' but doesn't exit, just sets return code.
+# Unfortunately "noisy foo" inside a function does not make that function return early,
+# so the expected usage is something like "noisy foo || return $?"
 noisy() {
-    # Like 'safe' but doesn't exit, just sets return code
-    # Unfortunately "noisy foo" inside a function does not make that function return,
-    # so callers will still need to do something like "noisy foo || return 1"
-    ("$@" && return 0) || (shout "cannot $*"; return 1)
+    "$@" && return 0
+    local _STATUS=$?
+    shout "Failed with status $_STATUS: $*"
+    return $_STATUS
 }
 
-quiet_safe() { "$@" > /dev/null 2>&1 || barf "cannot $*"; }
+quiet_safe() {
+    # Like 'safe' but suppress stdout and stderr until the final barf
+    "$@" > /dev/null 2>&1 || barf "cannot $*";
+}
 
 
 function cpcd {
@@ -554,19 +564,20 @@ function mysql-spin {
 }
 
 function remain {
-    # Rebase against current main, update code, and re-test
+    # Rebase against current main, update code, and re-test.
+    # If -a is passed, also check style, types, and packages.
     noisy git fetch origin main || return 1
     noisy git rebase origin/main || return 1
     if [ -n "$SPIN" ]; then
-        noisy update || return 1
+        noisy update || return $?
     else
-        noisy dev up || return 1
+        noisy dev up || return $?
     fi
-    noisy dev test --include-branch-commits || return 1
+    noisy dev test --include-branch-commits || return $?
     if [ "$1" == "-a" ]; then
-        noisy dev style --include-branch-commits || return 1
-        noisy dev typecheck || return 1
-        noisy dev packages check || return 1
+        noisy dev style --include-branch-commits || return $?
+        noisy dev typecheck || return $?
+        noisy dev packages check || return $?
     fi
 }
 
