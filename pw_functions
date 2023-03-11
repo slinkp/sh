@@ -21,25 +21,34 @@ function mkcpcd {
 	cpcd $@
 }
 
-function die {
-	echo Exiting: $1
-	exit 1
-}
-
-# Better than die: the "3-finger claw" by William Baxter, courtesy Isaac Levy,
+# The "3-finger claw" by William Baxter, courtesy Isaac Levy,
 # see http://lists.nycbug.org/pipermail/talk/2011-December/013790.html
-# Now instead of "foo || die blah", just do "safe foo"
-# and your shell script will exit early with a nice message.
+# Now instead of "foo hello || echo something went wrong && exit 1", just do "safe foo hello"
+# and your shell script will exit early with a nice message on stderr.
 #
 # Example:
 # $ safe asdpofuasdf
 # asdpofuasdf: command not found
-# bash: cannot asdpofuasdf
+# bash: Failed with status 1: asdpofuasdf
 # exit
 
-shout() { echo "$0: $*" >&2; }  # Just echo an error and the program name to stderr
-barf() { shout "$*"; exit 111; }
-safe() { "$@" || barf "Failed with status $?: $*"; }
+shout() {
+    # Just echo an error and the program name to stderr.
+    echo "$0: $*" >&2;
+}
+barf() {
+    # Like `shout` but also exit the program.
+    shout "$*"; exit 111;
+}
+safe() {
+    # Run the named command and barf if it fails.
+    "$@" || barf "Failed with status $?: $*";
+}
+
+die() {
+    # Some of my old scripts used this equivalent to barf
+    barf "$@"
+}
 
 # Unfortunately barf and safe cannot be used in functions intended for interactive use,
 # or they'll exit your terminal :(
