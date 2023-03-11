@@ -575,8 +575,8 @@ function mysql-spin {
 function remain {
     # Rebase against current main, update code, and re-test.
     # If -a is passed, also check style, types, and packages.
-    noisy git fetch origin main || return 1
-    noisy git rebase origin/main || return 1
+    noisy git fetch origin main || return $?
+    noisy git rebase origin/main || return $?
     if [ -n "$SPIN" ]; then
         noisy update || return $?
     else
