@@ -1,7 +1,4 @@
 # -*- mode: sh; -*-
-# $Id: pw_functions 742 2012-03-22 13:55:54Z pw $
-# $Revision: 742 $ $Date: 2012-03-22 09:55:54 -0400 (Thu, 22 Mar 2012) $
-# $Author: pw $
 
 # Adds some handy functions for working with directories, and other stuff
 # that can't be run in a subshell.
