@@ -585,6 +585,13 @@ function remain {
         noisy dev typecheck || return $?
         noisy dev packages check || return $?
     fi
+    # This is specific to my editor setup: I use a TAGS file for cross-references
+    # and have this other script to update it.
+    which tags > /dev/null
+    if [ $? ]; then
+        echo "Updating TAGS file in background silently"
+        tags > /dev/null 2>&1
+    fi
 }
 
 ##############################################################################

@@ -4,16 +4,23 @@
 source ~/sh/pw_functions 2>/dev/null
 
 if [ $SPIN ]; then
-    REPO=$SPIN_REPO_SOURCE_PATH
-else
-    REPO=~/src/github.com/Shopify/shopify
+    if [ -d "SPIN_REPO_SOURCE_PATH" ]; then
+        cd "$SPIN_REPO_SOURCE_PATH"
+    fi
 fi
-
-safe cd $REPO
 
 # Hack to install if broken yet again...
 (ripper-tags --help || gem install ripper-tags) > /dev/null 2>&1
+if [ "$?" -ne 0 ]; then
+    barf "Failed to find or install ripper-tags"
+fi
 
-CMD="ripper-tags -f TAGS -R -e components/ gems/ lib/"
+CMD="ripper-tags -f TAGS -R -e "
+for DIR in "components/ gems/ lib/"; do
+    if [ -d "$DIR" ]; then
+        export CMD="$CMD $DIR"
+    fi
+done
+
 echo "Running in background: $CMD"
 $CMD &
