@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+
+# Rebase against current main, update code, and re-test.
+# If -a is passed, also check style, types, and packages.
+
+if [ -f ~/sh/pw_functions ]; then
+    source ~/sh/pw_functions
+else
+    echo "Missing needed shell functions, abort" 1>&2
+    exit 1
+fi
+
+safe git fetch origin main
+safe git rebase origin/main
+
+if [ -n "$SPIN" ]; then
+    safe update
+else
+    safe dev up
+fi
+
+safe dev test --include-branch-commits
+
+if [ "$1" == "-a" ]; then
+    safe dev style --include-branch-commits
+    safe dev typecheck
+    safe dev packages check
+fi
+
+# This is specific to my editor setup: I use a TAGS file for cross-references
+# and have this other script to update it.
+which tags > /dev/null
+if [ $? ]; then
+    echo "Updating TAGS file in background silently"
+    tags > /dev/null 2>&1
+fi
+
