@@ -605,11 +605,11 @@ function remain {
 
 ##############################################################################
 # Emacsclient convenience
-# So I can do "e foo" and it edits foo in background
+# So I can do "e foo" and it edits foo
 ##############################################################################
 
 function e {
-    emacsclient "$@" &
+    emacsclient "$@"
 }
 
 ##############################################################################
