@@ -272,49 +272,58 @@ function activator {
     # both, so we avoid that.)
     declare -F | grep -q "^declare -f deactivate$"
     if [ $? -eq 0 ]; then
-    	deactivate
+        deactivate
     fi
     # Find an activate script.
     while [ true ]; do
-	if [ $PWD == '/' ]; then
-	    break
-	elif [ -f ./bin/activate ]; then
-	    ACTIVATOR_SCRIPT=$PWD/bin/activate
-	    break
-	elif [ -f activate ]; then
-	    ACTIVATOR_SCRIPT=$PWD/activate
-	    break
-	elif [ -f ./.env/bin/activate ]; then
-	    ACTIVATOR_SCRIPT=$PWD/.env/bin/activate
-	    break
-	elif [ -f ./.venv/bin/activate ]; then
-	    ACTIVATOR_SCRIPT=$PWD/.venv/bin/activate
-	    break
-	elif [ -f ./.pyvenv/bin/activate ]; then
-	    ACTIVATOR_SCRIPT=$PWD/.pyvenv/bin/activate
-	    break
-	else
-	    cd ..
-	fi
+        if [ $PWD == '/' ]; then
+            break
+        elif [ -f ./bin/activate ]; then
+            ACTIVATOR_SCRIPT=$PWD/bin/activate
+            break
+        elif [ -f activate ]; then
+            ACTIVATOR_SCRIPT=$PWD/activate
+            break
+        elif [ -f ./.env/bin/activate ]; then
+            ACTIVATOR_SCRIPT=$PWD/.env/bin/activate
+            break
+        elif [ -f ./.venv/bin/activate ]; then
+            ACTIVATOR_SCRIPT=$PWD/.venv/bin/activate
+            break
+        elif [ -f ./.pyvenv/bin/activate ]; then
+            ACTIVATOR_SCRIPT=$PWD/.pyvenv/bin/activate
+            break
+        else
+            cd ..
+        fi
     done
     if [ -f "$ACTIVATOR_SCRIPT" ]; then
-	echo Activating $ACTIVATOR_SCRIPT...
-	source $ACTIVATOR_SCRIPT
-	if [ -d "$WORKING_ENV" ]; then
-		echo WORKING_ENV is now $WORKING_ENV
-	elif [ -d "$VIRTUAL_ENV" ]; then
-		echo VIRTUAL_ENV is now $VIRTUAL_ENV
-	fi
-	cd $ACTIVATOR_STARTDIR
-	export OLDPWD=$OLD_OLDPWD
-    # TODO: get right python version!
-	export SP=`find $VIRTUAL_ENV/lib -name site-packages | head -n1`
-	return 0
+        echo Activating $ACTIVATOR_SCRIPT...
+        source $ACTIVATOR_SCRIPT
+        if [ -d "$WORKING_ENV" ]; then
+            echo WORKING_ENV is now $WORKING_ENV
+        elif [ -d "$VIRTUAL_ENV" ]; then
+            echo VIRTUAL_ENV is now $VIRTUAL_ENV
+        fi
+        cd $ACTIVATOR_STARTDIR
+        export OLDPWD=$OLD_OLDPWD
+        # TODO: get right python version!
+        export SP=`find $VIRTUAL_ENV/lib -name site-packages | head -n1`
+        # If ipdb is installed, use it for breakpoint().
+        # Note this doesn't work if eg we haven't installed dependencies yet, sadly.
+        # Also, this doesn't get unset
+        which -s ipython
+        if [ $? -eq 0 ]; then
+            export PYTHONBREAKPOINT="ipdb.set_trace"
+        else
+            unset PYTHONBREAKPOINT
+            return 0
+        fi
     else
-	echo No activate script found.
-	cd $ACTIVATOR_STARTDIR
-	export OLDPWD=$OLD_OLDPWD
-	return 1
+        echo No activate script found.
+        cd $ACTIVATOR_STARTDIR
+        export OLDPWD=$OLD_OLDPWD
+        return 1
     fi
 }
 
@@ -562,10 +571,10 @@ function mysql-spin {
     SOCKET=/var/run/mysqld-shopify--shopify/mysqld.sock
     if [ -n "$MYSQL_PORT" ]; then
         echo Connecting through $MYSQL_HOST $MYSQL_PORT
-        mysql -u root -D shopify_dev_shard_0 -P $MYSQL_PORT -h "$MYSQL_HOST" $@
+        mysql -u root -D shopify_dev_shard_0 -P $MYSQL_PORT -h "$MYSQL_HOST" "$@"
     elif [ -S $SOCKET ]; then
         echo Connecting through $SOCKET
-        mysql -u root -D shopify_dev_shard_0 -S $SOCKET $@
+        mysql -u root -D shopify_dev_shard_0 -S $SOCKET "$@"
     fi
 }
 
