@@ -1,0 +1,4 @@
+#!/bin/bash -l
+
+safe cd ~/Dropbox/morestuff/Music/binaural
+safe mplayer -loop 10 -af volume=-11  05\ Trilling\ Rill.mp3
