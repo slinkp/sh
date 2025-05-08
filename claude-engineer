@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# Depends on pw_functions being sourced,
+# and 
+
+WHERE=~/src/claude-engineer
+cd $WHERE || die "First install https://github.com/Doriandarko/claude-engineer at $WHERE"
+
+# Virtualenv is setup via direnv; here's the hack to allow that in a non-interactive shell
+direnv allow  # In case .envrc has been updated
+eval "$(direnv export bash)"
+
+python3 main.py
