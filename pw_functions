@@ -31,7 +31,7 @@ function mkcpcd {
 
 shout() {
     # Just echo an error and the program name to stderr.
-    echo "$0: $*" >&2;
+    echo -e "$0: $*" >&2;
 }
 barf() {
     # Like `shout` but also exit the program.
