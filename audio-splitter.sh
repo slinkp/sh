@@ -8,7 +8,7 @@ fi
 INFILE="$1"
 shift
 
-ffmpeg -i "$INFILE" -af silencedetect=noise=-56dB:d=0.15 -f null - 2> raw.txt
+ffmpeg -i "$INFILE" -af silencedetect=noise=-47dB:d=0.090 -f null - 2> raw.txt
 grep "silence[start|end]" raw.txt > silence.txt
 
 starts=(0)
