@@ -26,5 +26,5 @@ ends+=($duration)
 for i in "${!starts[@]}"; do
   duration=$(printf "%.6f" $(echo "${ends[$i]} - ${starts[$i]}" | bc))
   echo ffmpeg -i "$INFILE" -ss "${starts[$i]}" -t "$duration" -acodec libmp3lame "song_$((i+1)).mp3"
-  ffmpeg -i "$INFILE" -ss "${starts[$i]}" -t "$duration" -acodec libmp3lame "song_$((i+1)).mp3"
+  ffmpeg -i "$INFILE" -ss "${starts[$i]}" -t "$duration" -acodec libmp3lame -aq 2 "song_$((i+1)).mp3"
 done
