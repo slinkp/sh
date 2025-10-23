@@ -8,7 +8,13 @@ fi
 INFILE="$1"
 shift
 
-ffmpeg -i "$INFILE" -af silencedetect=noise=-47dB:d=0.090 -f null - 2> raw.txt
+# Known edge cases:
+# Free - "All Right Now" splits successfully
+# with noise=-49db:d=0.11
+# but splits the intro up into chunks with anything less than that
+# eg -49db:d=0.10 OR -48db:d=0.11.
+
+ffmpeg -i "$INFILE" -af silencedetect=noise=-49dB:d=0.11 -f null - 2> raw.txt
 grep "silence[start|end]" raw.txt > silence.txt
 
 starts=(0)
