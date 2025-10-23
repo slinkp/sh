@@ -1,7 +1,7 @@
 #!/bin/bash -l
 
 safe cd ~/Dropbox/morestuff/Music/binaural
-safe mplayer -loop 10 -af volume=-11  05\ Trilling\ Rill.mp3
+safe mplayer -loop 10 -af volume=-13  05\ Trilling\ Rill.mp3
 #while true; do
 #	mplayer -af volume=-11 05\ Trilling\ Rill.mp3
 #done
